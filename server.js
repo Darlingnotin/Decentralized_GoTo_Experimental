@@ -1,3 +1,11 @@
+//  server.js
+//
+//  Created by Darlingnotin in 2019.
+//  Copyright 2019 Darling
+//
+//  Distributed under the ISC license.
+//  See the accompanying file LICENSE or https://opensource.org/licenses/ISC
+
 var http = require("http"),
   url = require("url"),
   path = require("path"),
@@ -25,6 +33,7 @@ http.createServer(function (request, response) {
       return;
     case "/ip.json":
       pageData = "{" + JSON.stringify("ip") + ": " + JSON.stringify(request.connection.remoteAddress.split(':')[3]) + "}";
+//      pageData = "{" + JSON.stringify("ip") + ": " + JSON.stringify(request.headers['x-forwarded-for']) + "}";
       sendPage();
       return;
   }

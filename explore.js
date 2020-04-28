@@ -1,32 +1,48 @@
+//  explore.js
+//
+//  Created by Darlingnotin in 2019.
+//  Copyright 2019 Darling
+//
+//  App maintained in: https://github.com/kasenvr/Decentralized_GoTo_Experimental
+//  App copied to: https://github.com/kasenvr/project-athena
+//
+//  Distributed under the ISC license.
+//  See the accompanying file LICENSE or https://opensource.org/licenses/ISC
+
 (function () {
+    var defaultGoToJSON = "https://metaverse.vircadia.com/interim/d-goto/app/goto.json";
+    
     var tablet = Tablet.getTablet("com.highfidelity.interface.tablet.system");
     Menu.menuItemEvent.connect(onMenuItemEvent);
     var AppUi = Script.require('appUi');
     var goToAddresses;
     var permission;
-    Menu.addMenu("GoTo");
-    Menu.addMenuItem("GoTo", "Subscribe to new GoTo provider");
-    Menu.addMenu("GoTo > Unsubscribe from GoTo provider");
+    Menu.addMenu("Explore");
+    Menu.addMenuItem("Explore", "Subscribe to new GoTo provider");
+    Menu.addMenu("Explore > Unsubscribe from GoTo provider");
     var goToAddress = Settings.getValue("goToDecentral", "");
     for (var i = 0; i < goToAddress.length; i++) {
-        Menu.addMenuItem("GoTo > Unsubscribe from GoTo provider", goToAddress[i]);
+        Menu.addMenuItem("Explore > Unsubscribe from GoTo provider", goToAddress[i]);
     }
     var ui;
     function startup() {
         goToAddress = Settings.getValue("goToDecentral", "");
         if (goToAddress == "") {
-            var initialGoToList = Script.resolvePath("goto.json");
-            Menu.addMenuItem("GoTo > Unsubscribe from GoTo provider", initialGoToList);
+            var initialGoToList = Script.resolvePath(defaultGoToJSON);
+            Menu.addMenuItem("Explore > Unsubscribe from GoTo provider", initialGoToList);
             goToAddressNow = [
                 initialGoToList
             ];
             Settings.setValue("goToDecentral", goToAddressNow);
         }
+
+        var scriptDir = Script.resolvePath("");
+        scriptDir = scriptDir.slice(0, scriptDir.lastIndexOf("/") + 1);
+
         ui = new AppUi({
-            buttonName: "GoTo",
-            home: Script.resolvePath("decentralizedGoTo.html"),
-            icon: Script.resolvePath("goto-a.svg"),
-            activeIcon: Script.resolvePath("goto-a-msg.svg")
+            buttonName: "EXPLORE",
+            home: Script.resolvePath("explore.html"),
+            graphicsDirectory: scriptDir
         });
     }
 
@@ -68,18 +84,29 @@
             Window.location = messageData.visit;
         } else if (messageData.action == "addLocation") {
 
-            var messageDataDomainInformation = {
+            var locationBoxUserData = {
                 owner: messageData.owner,
                 domainName: messageData.domainName,
-                port: messageData.Port
+                port: messageData.Port,
+                ipAddress: null,
+                avatarCountRadius: null,
+                customPath: null,
+                grabbableKey: {
+                    grabbable: false
+                }
             };
+            
+            var locationBoxName = "Explore Marker (" + messageData.domainName + ")";
 
             locationboxID = Entities.addEntity({
                 position: Vec3.sum(MyAvatar.position, Quat.getFront(MyAvatar.orientation)),
-                userData: JSON.stringify(messageDataDomainInformation),
+                userData: JSON.stringify(locationBoxUserData),
                 serverScripts: messageData.script,
                 color: { red: 255, green: 0, blue: 0 },
-                type: "Box"
+                type: "Box",
+                name: locationBoxName,
+                collisionless: true,
+                grabbable: false
             });
         } else if (messageData.action == "retrievePortInformation") {
             var readyEvent = {
@@ -93,18 +120,20 @@
     }
 
     function onMenuItemEvent(menuItem) {
+        var menuItemList = JSON.stringify(Settings.getValue("goToDecentral", ""));
+        var menuItemExists = menuItemList.indexOf(menuItem) !== -1;
         if (menuItem == "Subscribe to new GoTo provider") {
             goToAddress = Settings.getValue("goToDecentral", "");
             var arrayLength = goToAddress.length;
-            var prom = Window.prompt("Enter the URL to the GoTo database JSON.", "");
+            var prom = Window.prompt("Enter URL to GoTo JSON.", "");
             if (prom) {
                 goToAddress[arrayLength] = prom;
                 Settings.setValue("goToDecentral", goToAddress);
-                Menu.addMenuItem("GoTo > Unsubscribe from GoTo provider", prom);
+                Menu.addMenuItem("Explore > Unsubscribe from GoTo provider", prom);
             }
-        } else {
+        } else if (menuItemExists) {
             goToAddresses = Settings.getValue("goToDecentral", "");
-            Menu.removeMenuItem("GoTo > Unsubscribe from GoTo provider", menuItem);
+            Menu.removeMenuItem("Explore > Unsubscribe from GoTo provider", menuItem);
             goToAddresses.remove(menuItem);
             Settings.setValue("goToDecentral", goToAddresses);
         }
@@ -126,7 +155,7 @@
 
     Script.scriptEnding.connect(function () {
         Messages.unsubscribe("goTo");
-        Menu.removeMenu("GoTo");
+        Menu.removeMenu("Explore");
         tablet.webEventReceived.disconnect(onWebEventReceived);
         Menu.menuItemEvent.disconnect(onMenuItemEvent);
     });
